@@ -3,6 +3,7 @@
 #include <random>
 #include <vector>
 #include <optional>
+#include <cmath>
 
 using namespace std;
 
@@ -23,6 +24,9 @@ void writeDataToFile(const string& filename, int max_value, int array_size) {
 
     for(int i =0; i< array_size; i++) {
         outfile << dist(gen) << endl;
+        if(i % 10 == 0) {
+            printf("Generated %d numbers out of %d\n",i, array_size);
+        }
     }
 
     outfile.close();
@@ -33,10 +37,9 @@ void writeDataToFile(const string& filename, int max_value, int array_size) {
 
     if (filename.empty()) {
         cerr << "Couldn't read data. Filename is empty." << endl;
+        return nullopt;
     }
-    cout << "TEST "<< filename << endl;
     ifstream infile(filename);
-    cout << "TEST2";
 
     if(!infile.is_open()) {
         cerr << "Error opening a file: " << filename << endl;
@@ -47,15 +50,17 @@ void writeDataToFile(const string& filename, int max_value, int array_size) {
     int read_value;
 
     while( infile >> read_value) {
-        cout<< "Data from file: "<< read_value << endl;
         file_array.push_back(read_value);
     }
+    cout << endl;
 
     infile.close();
 
     cout<< "Successfully read data from file"<< filename << endl;
 
     return file_array;
+}
 
-
+int calculateBitsRequired(int max_value) {
+    return static_cast<int>(log2(max_value)) + 1;
 }
