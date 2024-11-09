@@ -13,6 +13,4 @@ void writeDataToFile(const string& filename, int max_value, int array_size);
 
 optional<vector<int>> readDataFromFile(const string& filename);
 
-int calculateBitsRequired(int max_value);
-
 #endif

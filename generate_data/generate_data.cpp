@@ -60,7 +60,3 @@ void writeDataToFile(const string& filename, int max_value, int array_size) {
 
     return file_array;
 }
-
-int calculateBitsRequired(int max_value) {
-    return static_cast<int>(log2(max_value)) + 1;
-}

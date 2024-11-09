@@ -6,17 +6,20 @@
 #define RADIX_SORT_UTILS_CPP_H
 
 #include <vector>
+#include <atomic>
 #include <mutex>
-
 using namespace std;
+
+extern const int NUM_THREADS;
+extern vector<atomic<int>> global_count;
 
 // Bit Extraction Functions
 int getBit(int num, int bit_position);
+int calculateBitsRequired(int max_value);
+void countBits(const vector<int>& array, int bit, int start, int end);
+void countPhase(const vector<int>& array, int bit);
+void reorderPhase(const vector<int>& array, vector<int>& output, int bit, const vector<int>& position);
+// void radixSort(vector<int>& array);
 
-// Core Sorting Function for Specific Bit
-vector<int> countSortByBit(vector<int>& data, int bit_position, vector<vector<int>>& result, int thread_id, mutex& mtx);
-
-// // Multithreaded Radix Sort Controller
-vector<int> radixSortByBits(vector<int>& data, int num_bits);
 
 #endif //RADIX_SORT_UTILS_CPP_H
