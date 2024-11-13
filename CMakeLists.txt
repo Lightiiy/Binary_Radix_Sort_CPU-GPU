@@ -12,6 +12,4 @@ add_executable(Binary_Radix_Sort_CPU_GPU
     "generate_data/generate_data.cpp"
         radix_sort.cpp
         generate_data/generate_data.h
-        radix_sort_utils/radix_sort_utils.cpp
-        radix_sort_utils/radix_sort_utils.h
-        radix_sort.cpp)
+)

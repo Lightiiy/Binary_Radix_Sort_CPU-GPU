@@ -7,7 +7,7 @@
 
 using namespace std;
 
-void writeDataToFile(const string& filename, int max_value, int array_size) {
+void writeRandomDataToFile(const string& filename, int max_value, int array_size) {
     if (filename.empty()) {
         cerr << "Couldn't write data. Filename is empty." << endl;
         return; // Return an empty optional
@@ -59,4 +59,16 @@ void writeDataToFile(const string& filename, int max_value, int array_size) {
     cout<< "Successfully read data from file"<< filename << endl;
 
     return file_array;
+}
+
+void writeSortedDataToFile(const string& filename, const vector<int>& data) {
+    ofstream ofs(filename);
+    if (ofs.is_open()) {
+        for (const auto& num : data) {
+            ofs << num << '\n';
+        }
+        ofs.close();
+    } else {
+        cerr << "Error opening file for writing: " << filename << endl;
+    }
 }
