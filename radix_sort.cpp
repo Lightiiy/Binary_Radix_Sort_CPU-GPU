@@ -1,20 +1,23 @@
 #include <iostream>
 #include <ostream>
 #include <thread>
-#include <mutex>
+#include <intrin.h>
 #include <vector>
 #include <optional>
 #include <algorithm>
 #include <filesystem>
 #include "generate_data/generate_data.h"
+#include "CUDA_files/radix_sort_gpu.cuh"
+
+//Google shared product that has a CUDA enviorment avaible
 
 using namespace std;
 namespace fs = filesystem;
 
-mutex mtx;
-
 int calculateBitsRequired(int max_value) {
-    return static_cast<int>(sizeof(int) * 8 - __builtin_clz(max_value));
+    unsigned long index;
+    _BitScanReverse(&index, static_cast<unsigned>(max_value));
+    return static_cast<int>(index) + 1;
 }
 
 void sortSegment(const vector<int>& array, int start, int end, int shift, vector<int>& local_zero_bucket, vector<int>& local_one_bucket) {
@@ -27,10 +30,8 @@ void sortSegment(const vector<int>& array, int start, int end, int shift, vector
     }
 }
 
-void radixSortCPU(vector<int>& array, int max_value) {
-    int bits_required = calculateBitsRequired(max_value);
+void radixSortCPU(vector<int>& array, int bits_required) {
     int num_threads = thread::hardware_concurrency();
-    vector<int> temp_array(array.size());
 
     for (int shift = 0; shift < bits_required; ++shift) {
         vector<int> zero_bucket;
@@ -62,8 +63,8 @@ void radixSortCPU(vector<int>& array, int max_value) {
 
 int main() {
     const string filename = "basic.txt";
-    const int max_value = 10000000;
-    const int array_size = 10000000;
+    const int max_value = 1000000;
+    const int array_size = 500000;
 
     vector<int> test_data;
 
@@ -89,21 +90,24 @@ int main() {
         }
     }
 
-    cout << "Original Data: ";
-    // for (const auto& num : test_data) {
-    //     cout << " " << num;
-    // }
+    cout << "Original Data ";
+    for (const auto& num : test_data) {
+        cout << " " << num;
+    }
     cout << endl;
+    int bits_required = calculateBitsRequired(max_value);
 
-    radixSortCPU(test_data, max_value);
+    radixSortGPU(test_data, bits_required);
+
+    // radixSortCPU(test_data, bits_required);
 
     string sorted_filename = filename + "_sorted.txt";
     writeSortedDataToFile(sorted_filename, test_data);
 
-    cout << "Sorted Data: ";
-    // for (const auto& num : test_data) {
-    //     cout << " " << num;
-    // }
+    cout << "Sorted Data ";
+    for (const auto& num : test_data) {
+        cout << " " << num;
+    }
     cout << endl;
 
 
