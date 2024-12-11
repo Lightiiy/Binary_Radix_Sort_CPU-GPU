@@ -1,23 +1,61 @@
 #include <iostream>
 #include <ostream>
+#include <fstream>
 #include <thread>
 #include <intrin.h>
 #include <vector>
 #include <optional>
 #include <algorithm>
 #include <filesystem>
+#include <chrono>
 #include "generate_data/generate_data.h"
 #include "CUDA_files/radix_sort_gpu.cuh"
 
-//Google shared product that has a CUDA enviorment avaible
 
 using namespace std;
 namespace fs = filesystem;
+chrono::high_resolution_clock::time_point begin_timer, end_timer;
+
+void startTimer() {
+    begin_timer = chrono::high_resolution_clock::now();
+}
+
+long long stopTimerAndLog(const std::string& task_name = "Task") {
+    end_timer = chrono::high_resolution_clock::now();
+    auto duration = chrono::duration_cast<chrono::nanoseconds>(end_timer - begin_timer).count();
+    double duration_seconds = static_cast<double>(duration) / 1e9;
+    cout << task_name << " took " << duration << " ns" << "(" << duration_seconds << ")s" << endl;
+    return duration;
+}
 
 int calculateBitsRequired(int max_value) {
     unsigned long index;
     _BitScanReverse(&index, static_cast<unsigned>(max_value));
     return static_cast<int>(index) + 1;
+}
+
+optional<vector<int>> generateAndLoadDataFromFile(string filename, int max_value, int array_size )
+{
+    if (fs::exists(filename)) {
+    cout << "File " << filename << " exists. Reading data from the file." << endl;
+    optional<vector<int>> opt_data = readDataFromFile(filename);
+    if (opt_data) {
+        return *opt_data;
+    } else {
+        cout << "No data found in the file." << endl;
+        return nullopt;
+    }
+} else {
+    cout << "File " << filename << " does not exist. Generating new data and writing to file." << endl;
+    writeRandomDataToFile(filename, max_value, array_size);
+    optional<vector<int>> opt_data = readDataFromFile(filename);
+    if (opt_data) {
+        return *opt_data;
+    } else {
+        cout << "Failed to read generated data." << endl;
+        return nullopt;
+    }
+}
 }
 
 void sortSegment(const vector<int>& array, int start, int end, int shift, vector<int>& local_zero_bucket, vector<int>& local_one_bucket) {
@@ -56,83 +94,72 @@ void radixSortCPU(vector<int>& array, int bits_required) {
             one_bucket.insert(one_bucket.end(), one_buckets[t].begin(), one_buckets[t].end());
         }
 
-        copy(zero_bucket.begin(), zero_bucket.end(), array.begin());
-        copy(one_bucket.begin(), one_bucket.end(), array.begin() + zero_bucket.size());
+        copy(one_bucket.begin(), one_bucket.end(), array.begin());
+        copy(zero_bucket.begin(), zero_bucket.end(), array.begin() + one_bucket.size());
     }
 }
 
 int main() {
     const string filename = "basic.txt";
-    const int max_value = 1000000;
-    const int array_size = 500000;
+    const int max_value = 2;
+    const int array_size = 1000;
 
-    vector<int> test_data;
+    auto import_data = generateDataDirectly((int)max_value, array_size);
 
-    // Check if file exists
-    if (fs::exists(filename)) {
-        cout << "File " << filename << " exists. Reading data from the file." << endl;
-        optional<vector<int>> opt_data = readDataFromFile(filename);
-        if (opt_data) {
-            test_data = *opt_data;
-        } else {
-            cout << "No data found in the file." << endl;
-            return 0;
-        }
-    } else {
-        cout << "File " << filename << " does not exist. Generating new data and writing to file." << endl;
-        writeRandomDataToFile(filename, max_value, array_size);
-        optional<vector<int>> opt_data = readDataFromFile(filename);
-        if (opt_data) {
-            test_data = *opt_data;
-        } else {
-            cout << "Failed to read generated data." << endl;
-            return 0;
-        }
-    }
-
-    cout << "Original Data ";
-    for (const auto& num : test_data) {
-        cout << " " << num;
-    }
-    cout << endl;
     int bits_required = calculateBitsRequired(max_value);
 
-    radixSortGPU(test_data, bits_required);
+    long long avg_duration = 0;
 
-    // radixSortCPU(test_data, bits_required);
+        vector<int> test_data;
+        if(import_data) {
+            test_data = *import_data;
+        }
+        else {
+            std::cerr << "Failed to generate data." << std::endl;
+        }
+
+        cout << "Original Data ";
+        for (const auto& num : test_data) {
+            cout << " " << num;
+        }
+        cout << endl;
+
+        startTimer();
+
+        radixSortGPU(test_data, bits_required);
+        // radixSortCPU(test_data, bits_required);
+
+        string log_data = "MaxValue:"+to_string(max_value)+"_ArraySize"+to_string(array_size);
+        long long duration = stopTimerAndLog();
+
+    // cout << "Sorted Data ";
+    // for (const auto& num : test_data) {
+    //     cout << " " << num;
+    // }
+    // cout << endl;
 
     string sorted_filename = filename + "_sorted.txt";
     writeSortedDataToFile(sorted_filename, test_data);
-
-    cout << "Sorted Data ";
-    for (const auto& num : test_data) {
-        cout << " " << num;
-    }
-    cout << endl;
-
-
-
     return 0;
 }
 
 
-// void radixSort(vector<int>& array, int max_value) {
-//     int bits_required = calculateBitsRequired(max_value);
-//
-//     for (int shift = 0; shift < bits_required; ++shift) {
-//         vector<int> zero_bucket;
-//         vector<int> one_bucket;
-//
-//         for (int num : array) {
-//             if ((num & (1 << shift)) == 0) {
-//                 zero_bucket.push_back(num);
-//             } else {
-//                 one_bucket.push_back(num);
-//             }
-//         }
-//
-//         array.clear();
-//         array.insert(array.end(), zero_bucket.begin(), zero_bucket.end());
-//         array.insert(array.end(), one_bucket.begin(), one_bucket.end());
-//     }
+// test_data = generateAndLoadDataFromFile(filename, max_value, array_size).value_or(vector<int>());
+
+
+
+
+// ofstream outfile("GPU_MAX_VAL" + std::to_string(max_value) + ".txt");
+
+// for ( int i = iterations; i >0; i--) {
+
+// cout << bits_required;
+// int iterations = 100;
+
+// outfile << duration << "," << endl;
+// avg_duration += duration;
 // }
+// outfile << avg_duration / iterations << endl;
+// outfile.close();
+
+//

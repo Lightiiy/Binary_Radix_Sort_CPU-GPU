@@ -3,7 +3,7 @@
 #include <random>
 #include <vector>
 #include <optional>
-#include <cmath>
+
 
 using namespace std;
 
@@ -33,8 +33,8 @@ void writeRandomDataToFile(const string& filename, int max_value, int array_size
     cout<< "Successfully wrote data to file"<< filename << endl;
 }
 
- optional<vector<int>> readDataFromFile(const string& filename) {
 
+ optional<vector<int>> readDataFromFile(const string& filename) {
     if (filename.empty()) {
         cerr << "Couldn't read data. Filename is empty." << endl;
         return nullopt;
