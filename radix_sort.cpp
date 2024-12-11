@@ -101,7 +101,7 @@ void radixSortCPU(vector<int>& array, int bits_required) {
 
 int main() {
     const string filename = "basic.txt";
-    const int max_value = 2;
+    const int max_value = 10000;
     const int array_size = 1000;
 
     auto import_data = generateDataDirectly((int)max_value, array_size);
